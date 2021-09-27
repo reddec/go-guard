@@ -1,0 +1,196 @@
+<html>
+<body>
+<h1>Guard</h1>
+
+{{if .Error}}
+    <div class="error">
+        {{.Error}}
+    </div>
+{{end}}
+
+<h2>Zones</h2>
+
+<ul>
+    {{range .Zones}}
+        <li>{{.}}</li>
+    {{end}}
+</ul>
+
+<h2>Tokens</h2>
+
+
+<br/>
+
+<div class="table">
+    <div class="tr">
+        <span class="th">Label</span>
+        <span class="th">Value</span>
+        <span class="th">Created</span>
+        <span class="th">Expired</span>
+        <span class="th">Zones</span>
+        <span class="th">Actions</span>
+    </div>
+    {{range $token := .Tokens}}
+        <div class="tr">
+            <span class="td">{{$token.Label}}</span>
+            <span class="td"><code>{{$token.Value}}</code></span>
+            <span class="td">{{$token.CreatedAt.Format "Mon, 02 Jan 2006 15:04:05 MST"}}</span>
+            <span class="td">
+                {{if $token.ExpiredAt.IsZero}}
+                    <i>never</i>
+                {{else}}
+                    {{if $token.ExpiredAt.After $.Now}}
+                        <abbr title="{{$token.ExpiredAt.Format "Mon, 02 Jan 2006 15:04:05 MST"}}">after {{($token.ExpiredAt.Sub $.Now).Round $.Second}}</abbr>
+                    {{else}}
+                        {{$token.ExpiredAt.Format "Mon, 02 Jan 2006 15:04:05 MST"}}
+                    {{end}}
+                {{end}}
+            </span>
+            <span class="td">
+                {{with $token.Zones}}
+                    <ul>
+                        {{range .}}
+                            <li>{{.}}</li>
+                        {{end}}
+                    </ul>
+                {{else}}
+                    <i>all zones</i>
+                {{end}}
+            </span>
+            <div class="td">
+                <form method="post" action="tokens">
+                    <input type="hidden" name="value" value="{{$token.Value}}"/>
+                    <button type="submit" name="action" value="delete">delete</button>
+                </form>
+            </div>
+        </div>
+    {{end}}
+
+    <form method="post" action="tokens" class="tr">
+        <div class="td">
+            <input type="text" name="label" placeholder="label" class="td"/>
+        </div>
+        <span class="td"><i>automatic</i></span>
+        <span class="td"><i>today</i></span>
+        <div class="td">
+            <input type="text" name="duration" placeholder="24h"/>
+        </div>
+        <div class="td">
+            <input type="text" name="zones" placeholder="admin, default, ..."/>
+        </div>
+        <button type="submit" name="action" value="create" class="td">create new</button>
+    </form>
+</div>
+
+
+<h2>Users</h2>
+
+
+<br/>
+
+<div class="table">
+    <div class="tr">
+        <span class="th">Name</span>
+        <span class="th">Password</span>
+        <span class="th">Active</span>
+        <span class="th">Created</span>
+        <span class="th">Modified</span>
+        <span class="th">Zones</span>
+        <span class="th">Actions</span>
+    </div>
+    {{range $user := .Users}}
+        <form method="post" action="users" class="tr">
+            <span class="td">{{$user.Name}}</span>
+            <div class="td">
+                <input type="password" name="password" placeholder="new password"/>
+            </div>
+            <span class="td">{{if $user.Disabled}}disabled{{else}}active{{end}}</span>
+            <span class="td">{{$user.CreatedAt.Format "Mon, 02 Jan 2006 15:04:05 MST"}}</span>
+            <span class="td">
+                <abbr title="{{$user.UpdatedAt.Format "Mon, 02 Jan 2006 15:04:05 MST"}}">{{($.Now.Sub $user.UpdatedAt).Round $.Second}} ago</abbr>
+            </span>
+            <div class="td">
+                {{with $user.Zones}}
+                    <ul>
+                        {{range .}}
+                            <li>{{.}}</li>
+                        {{end}}
+                    </ul>
+                {{else}}
+                    <i>all zones</i>
+                {{end}}
+            </div>
+            <div class="td">
+                <input type="hidden" name="name" value="{{$user.Name}}"/>
+                <input type="hidden" name="nextStatus" value="{{not $user.Disabled}}"/>
+                <button type="submit" name="action" value="delete">delete</button>
+                {{if $user.Disabled}}
+                    <button type="submit" name="action" value="change-status">activate</button>
+                {{else}}
+                    <button type="submit" name="action" value="change-status">disable</button>
+                {{end}}
+                <button type="submit" name="action" value="reset-password">change password</button>
+            </div>
+        </form>
+    {{end}}
+    <form method="post" action="users" class="tr">
+        <input type="hidden" name="action" value="create">
+        <div class="td">
+            <input type="text" name="name" placeholder="username"/>
+        </div>
+        <div class="td">
+            <input type="password" name="password" placeholder="password"/>
+        </div>
+        <div class="td">
+            <input type="checkbox" name="active" checked/> active
+        </div>
+        <span class="td"><i>today</i></span>
+        <span class="td"><i>today</i></span>
+        <div class="td">
+            <input type="text" name="zones" placeholder="admin, default, ..."/>
+        </div>
+        <div class="td">
+            <button type="submit" name="action" value="create">create new</button>
+        </div>
+    </form>
+</div>
+</body>
+<style>
+    table {
+        width: 100%;
+    }
+
+    table tbody tr td {
+        border-bottom: 1px dashed #333333;
+    }
+
+    .error {
+        border: 1px solid red;
+        margin: 1em;
+        padding: 1em;
+        font-weight: bold;
+        font-size: x-large;
+    }
+
+    div.table {
+        display: table;
+        width: 100%;
+    }
+
+    form.tr, div.tr {
+        display: table-row;
+    }
+
+    span.td, div.td {
+        display: table-cell;
+        border-bottom: 1px dashed #333333;
+    }
+
+    span.th {
+        display: table-cell;
+        font-weight: bold;
+        padding-bottom: 0.5em;
+        margin-bottom: 0.5em;
+    }
+</style>
+</html>
