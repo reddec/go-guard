@@ -183,7 +183,7 @@ func (g *Guard) Users() UserStorage {
 	return g.users
 }
 
-// UI handler with restriction 'admin' zone.
+// UI handler with restriction 'admin' zone. Prefix should be stripped.
 func (g *Guard) UI() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", g.getMain)
